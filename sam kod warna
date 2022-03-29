@@ -1,0 +1,48 @@
+#Выдать варн
+@client.command(aliases=['warn'])
+@commands.has_permissions(administrator=True)
+async def __warn(ctx, member: discord.Member = None, amount: int = None, reason = None):
+    if member is None:
+        await ctx.send(f"```**{ctx.author}**, укажите пользователя.```")
+
+        await ctx.message.add_reaction('❌')
+    else:
+      if amount is None:
+        await ctx.send(f"```{ctx.author}, укажите кол-во варнов.```")
+
+        await ctx.message.add_reaction('❌')
+      if amount < 0:
+        await ctx.send(f"```{ctx.author}, укажите кол-во больше 0 варнов.```")
+
+        await ctx.message.add_reaction('❌')
+      if reason is None:
+        await ctx.send(f"```{ctx.author}, укажите причину варна```")
+
+        await ctx.message.add_reaction('❌')
+      else:
+          cursor.execute("UPDATE 'users' SET 'warns' = 'warns' + '{}' WHERE 'id' = '{}' AND 'server_id' == '?'".format(amount, member.id, ctx.guild.id,))
+          connection.commit()
+
+          await ctx.message.add_reaction('✅')
+          embed = discord.Embed(description = f'''**ВЫДАН ВАРН**\n\nУчастник: **{member.name}**.\nВыдал: **{ctx.author}**.\nКол-во варнов: **{amount}** 
+                ```css
+Причина: {reason}
+                ```
+                ''',
+                color = 0x36393E,)
+          await member.send(embed=embed)
+          channel =  discord.utils.get(ctx.guild.channels, name = "журнал-аудита")
+          await channel.send(embed=embed)
+          print(f"{ctx.author} выдал {amount} варнов пользователю {member.name} по причине {reason}")
+        
+          warni = cursor.execute("SELECT 'warns' FROM 'users' WHERE 'id' = '{}' AND 'server_id' == '?'".format(member.id, ctx.guild.id))#.fetchone()
+        
+          if warni == 3:
+            await member.ban(reason = 'Выдано 3/3 варнов.')
+            embed1 = discord.Embed(description = f'''**БАН**\n\nУчастник: **{member.name}**.\nВыдал: **СИСТЕМА**. 
+                ```cssПричина: 3/3 варнов.```''',color = 0x36393E,)
+            await channel.send (embed = embed1)
+            await member.send (embed = embed1)
+            cursor.execute(
+              "UPDATE 'users' SET 'warns' == '?' WHERE 'id' = '{}' AND 'server_id' == '?'".format(0, member.id, ctx.guild.id))
+          connection.commit()
